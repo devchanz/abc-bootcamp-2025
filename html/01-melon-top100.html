@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>가수별 Cover Flow</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        /* Swiper.js 커스텀 스타일 */
+        .swiper {
+            width: 100%;
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+        .swiper-slide {
+            background-position: center;
+            background-size: cover;
+            width: 320px;
+            height: 320px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            -webkit-box-reflect: below 1px linear-gradient(transparent, transparent, #0006);
+        }
+        .swiper-slide img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        /* 네비게이션 버튼 색상 변경 */
+        .swiper-button-next, .swiper-button-prev {
+            color: #4ade80; /* text-green-400 */
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white antialiased overflow-hidden h-screen flex flex-col justify-center items-center">
+
+    <div class="swiper">
+        <div class="swiper-wrapper" id="coverflow-wrapper">
+            </div>
+        <div class="swiper-button-next"></div>
+        <div class="swiper-button-prev"></div>
+    </div>
+
+    <div id="info-panel" class="text-center mt-4 p-6 w-full max-w-2xl transition-opacity duration-500">
+        </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- 1. 데이터 정의 및 처리 ---
+            const allSongs = [
+                { title: 'Your Idol', artist: 'KPop Demon Hunters Cast,Danny Chung,Saja Boys,Andrew Choi,Neckwav,Kevin Woo,samUIL Lee', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/118/59/863/11859863_20250620104512.jpg' },
+                { title: 'IDOL', artist: '방탄소년단', cover: 'https://cdnimg.melon.co.kr/cm/album/images/101/97/480/10197480.jpg' },
+                { title: '  Your Idol (CG5 Version)', artist: 'CG5', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/118/75/910/11875910_20250702050958.jpg' },
+                { title: 'Idol', artist: 'YOASOBI', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/112/50/403/11250403_20230524085012.jpg' },
+                { title: 'Popular (From The Idol)', artist: 'The Weeknd,Madonna', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/112/62/534/11262534_20230612120056.jpg'},
+                { title: 'IDOL (Feat. Nicki Minaj)', artist: '방탄소년단', cover: 'https://cdnimg.melon.co.kr/cm/album/images/101/97/480/10197480.jpg' },
+                { title: 'HokoritakakiIdol (feat. Kotoha)', artist: 'Honeyworks', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/114/24/603/11424603_20240221231720.jpg'},
+                { title: 'Popular', artist: 'The Weeknd', cover: 'https://cdnimg.melon.co.kr/cm2/album/images/112/62/534/11262534_20230612120056.jpg'}
+            ];
+
+            // 가수별로 곡을 그룹화
+            const artistsMap = {};
+            allSongs.forEach(song => {
+                // 여러 아티스트인 경우 첫 번째 아티스트를 대표로 사용
+                const mainArtist = song.artist.split(',')[0].trim();
+                if (!artistsMap[mainArtist]) {
+                    artistsMap[mainArtist] = {
+                        songs: [],
+                        cover: song.cover // 대표 커버 이미지로 첫 곡의 커버 사용
+                    };
+                }
+                artistsMap[mainArtist].songs.push(song.title);
+            });
+
+            // 2곡 이상인 가수만 필터링하고, 곡 수에 따라 내림차순 정렬
+            const sortedArtists = Object.entries(artistsMap)
+                .map(([name, data]) => ({ name, ...data }))
+                .filter(artist => artist.songs.length > 1)
+                .sort((a, b) => b.songs.length - a.songs.length);
+
+
+            // --- 2. Swiper 슬라이드 및 정보 패널 업데이트 ---
+            const wrapper = document.getElementById('coverflow-wrapper');
+            const infoPanel = document.getElementById('info-panel');
+            
+            if (sortedArtists.length === 0) {
+                infoPanel.innerHTML = `<p class="text-gray-500">2곡 이상 부른 가수가 없습니다.</p>`;
+                return;
+            }
+
+            // 슬라이드 동적 생성
+            sortedArtists.forEach(artist => {
+                const slide = document.createElement('div');
+                slide.className = 'swiper-slide';
+                slide.innerHTML = `<img src="${artist.cover}" alt="${artist.name}" />`;
+                wrapper.appendChild(slide);
+            });
+            
+            // 정보 패널 업데이트 함수
+            function updateInfoPanel(artist) {
+                infoPanel.style.opacity = 0;
+                setTimeout(() => {
+                infoPanel.innerHTML = `
+                    <h2 class="text-4xl font-bold" style="color:#178a4c;">${artist.name}</h2>
+                    <p class="text-lg mt-2" style="color:#4ade80;">총 ${artist.songs.length}곡</p>
+                    <ul class="mt-4 max-w-md mx-auto text-left space-y-1">
+                        ${artist.songs.map(title => `
+                            <li class="bg-gray-800 p-2 rounded-md truncate">
+                                <span class="text-green-500 mr-2">✓</span>
+                                ${title}
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                    infoPanel.style.opacity = 1;
+                }, 300);
+            }
+
+            // --- 3. Swiper 초기화 ---
+            const swiper = new Swiper('.swiper', {
+                effect: 'coverflow',
+                grabCursor: true,
+                centeredSlides: true,
+                slidesPerView: 'auto',
+                loop: sortedArtists.length > 2, // 슬라이드가 3개 이상일 때만 루프
+                coverflowEffect: {
+                    rotate: 50,
+                    stretch: 0,
+                    depth: 100,
+                    modifier: 1,
+                    slideShadows: true,
+                },
+                // 키보드 조작
+                keyboard: {
+                    enabled: true,
+                },
+                // 네비게이션 버튼
+                navigation: {
+                    nextEl: '.swiper-button-next',
+                    prevEl: '.swiper-button-prev',
+                },
+                // 슬라이드 변경 시 이벤트
+                on: {
+                    slideChange: function () {
+                        // 루프 모드일 경우 realIndex 사용
+                        const activeIndex = this.realIndex;
+                        updateInfoPanel(sortedArtists[activeIndex]);
+                    },
+                },
+            });
+
+            // 초기 정보 표시
+            updateInfoPanel(sortedArtists[swiper.realIndex]);
+        });
+    </script>
+
+</body>
+</html>

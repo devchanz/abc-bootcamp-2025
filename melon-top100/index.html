@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>멜론 TOP100 차트 뷰어</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Nanum Gothic', sans-serif;
+      background: #e8f5e9;
+      color: #222;
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background: linear-gradient(90deg, #43ea7f 0%, #1de9b6 100%);
+      color: #fff;
+      padding: 2rem 1rem 1rem 1rem;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+    h1 {
+      margin: 0 0 0.5rem 0;
+      font-size: 2.2rem;
+      font-weight: 700;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 2rem auto;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 16px rgba(34,139,34,0.08);
+      padding: 2rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 2rem;
+    }
+    th, td {
+      padding: 0.7rem 0.5rem;
+      border-bottom: 1px solid #c8e6c9;
+      text-align: left;
+    }
+    th {
+      background: #a5d6a7;
+      color: #222;
+      font-weight: 700;
+    }
+    tr:hover {
+      background: #f1f8e9;
+    }
+    .chart-section {
+      margin-top: 2rem;
+    }
+    @media (max-width: 700px) {
+      .container { padding: 1rem; }
+      th, td { font-size: 0.95rem; }
+      h1 { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>멜론 TOP100 차트 뷰어</h1>
+    <div>2023년 12월 4일 기준, 실시간 차트 데이터</div>
+  </header>
+  <div class="container">
+    <h2>곡 리스트</h2>
+    <div id="loading">데이터를 불러오는 중...</div>
+    <table id="song-table" style="display:none;">
+      <thead>
+        <tr>
+          <th>순위</th>
+          <th>곡명</th>
+          <th>아티스트</th>
+          <th>앨범</th>
+          <th>등락</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <section class="chart-section">
+      <h2>아티스트별 곡 수</h2>
+      <canvas id="artistChart" height="120"></canvas>
+    </section>
+  </div>
+  <script>
+    const DATA_URL = 'https://pyhub.kr/melon/20231204.json';
+    async function fetchMelonData() {
+      const res = await fetch(DATA_URL);
+      if (!res.ok) throw new Error('데이터를 불러올 수 없습니다.');
+      return await res.json();
+    }
+    function renderTable(songs) {
+      const tbody = document.querySelector('#song-table tbody');
+      tbody.innerHTML = '';
+      songs.forEach(song => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${song.rank}</td>
+          <td>${song.title}</td>
+          <td>${song.artist}</td>
+          <td>${song.album}</td>
+          <td>${song.status || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('song-table').style.display = '';
+    }
+    function renderArtistChart(songs) {
+      const artistCount = {};
+      songs.forEach(song => {
+        const names = song.artist.split(/,|&|\/|\s*\+\s*/g).map(s=>s.trim());
+        names.forEach(name => {
+          if (!name) return;
+          artistCount[name] = (artistCount[name] || 0) + 1;
+        });
+      });
+      const sorted = Object.entries(artistCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+      const ctx = document.getElementById('artistChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sorted.map(x=>x[0]),
+          datasets: [{
+            label: '곡 수',
+            data: sorted.map(x=>x[1]),
+            backgroundColor: 'rgba(56, 203, 120, 0.7)',
+            borderColor: 'rgba(30, 150, 80, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+    fetchMelonData()
+      .then(data => {
+        // 데이터 구조에 따라 songs 배열 추출
+        const songs = Array.isArray(data) ? data : (data.songs || data);
+        renderTable(songs);
+        renderArtistChart(songs);
+      })
+      .catch(err => {
+        document.getElementById('loading').textContent = '데이터를 불러올 수 없습니다.';
+      });
+  </script>
+</body>
+</html>
